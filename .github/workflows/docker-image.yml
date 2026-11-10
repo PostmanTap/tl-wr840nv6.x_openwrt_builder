@@ -1,25 +1,40 @@
-name: Build OpenWrt 19.07
+name: Build OpenWrt
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bullseye
+      options: --user root
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Install Build Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libncurses5-dev gawk git subversion libssl-dev gettext unzip zlib1g-dev file wget python2
+          apt-get update && apt-get install -y \
+            build-essential libncurses-dev python2 git gawk \
+            unzip file wget ca-certificates rsync
 
-      - name: Build Firmware
+      - name: Clone Source and Feeds
         run: |
-          git clone -b v19.07.10 https://github.com/openwrt/openwrt.git openwrt
+          git clone https://github.com/IcedShake/openwrt-19.07-tl-wr840n-v6.x openwrt
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          if [ -f ../.config ]; then cp ../.config .config; fi
           make defconfig
+
+      - name: Compile Firmware
+        run: |
+          cd openwrt
           make -j$(nproc) || make -j1 V=s
+
+      - name: Upload Firmware Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-firmware
+          path: openwrt/bin/targets/
