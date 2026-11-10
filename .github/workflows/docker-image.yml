@@ -8,10 +8,6 @@ ENV   \
 COPY  .config /
 RUN   \
   \
-  `####################` \
-  `# Install packages #` \
-  `####################` \
-  \
   export DEBIAN_FRONTEND=noninteractive \
   \
   &&  apt update \
